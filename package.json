@@ -1,0 +1,15 @@
+{
+  "name": "ir_blaster",
+  "version": "0.0.0",
+  "description": "Raspberry Pi universal IR remote / smart light control point and Alexa interface.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Mik Cox",
+  "license": "ISC",
+  "dependencies": {
+    "aws-iot-device-sdk": "^1.0.12",
+    "node-lifx": "^0.6.0"
+  }
+}

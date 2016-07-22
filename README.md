@@ -29,3 +29,6 @@ irsend SEND_ONCE yamaha KEY_POWER
 # Send the KEY_VOLUMEDOWN command once
 irsend SEND_ONCE yamaha KEY_VOLUMEDOWN
 
+Helpful IR information/documentation at http://alexba.in/blog/2013/01/06/setting-up-lirc-on-the-raspberrypi/
+
+
