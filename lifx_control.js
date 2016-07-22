@@ -8,9 +8,9 @@ var device = awsIot.device({
   "port": 8883,
   "clientId": "my-room-activator",
   "thingName": "My_Room",
-  "caCert": "aws_certs/root-CA.crt",
-  "clientCert": "aws_certs/0a5ea7d8f3-certificate.pem.crt",
-  "privateKey": "aws_certs/0a5ea7d8f3-private.pem.key"
+  "caCert": "./aws_certs/root-CA.crt",
+  "clientCert": "./aws_certs/0a5ea7d8f3-certificate.pem.crt",
+  "privateKey": "./aws_certs/0a5ea7d8f3-private.pem.key"
 });
 
 // Keep track of the room's state as last seen by the pi.  This will help decide which buttons
