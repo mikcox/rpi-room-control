@@ -36,5 +36,9 @@ irsend SEND_ONCE yamaha KEY_POWER
 irsend SEND_ONCE yamaha KEY_VOLUMEDOWN
 ```
 
+# Running the script on the Pi:
+The main NodeJS script is in lifx_control.js.  However, we want this to run automatically when the Pi boots.  Currently, I am doing this using the following line in crontab:
+
+`@reboot sudo /home/pi/Documents/ir_blaster/roomControl.sh > /dev/null &`
 
 
