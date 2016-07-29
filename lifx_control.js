@@ -128,29 +128,9 @@ client.on('light-new', function(light) {
   if ( lights.length === 3 ) {
   	allLightsWhite();
   }
-  /*light.getState(function(err, data) {
-  	if ( err ) {
-  		console.log( err );
-  	} else {
-  		console.log( 'Successfully got light state: ' + JSON.stringify(data) );
-  	}
-  });*/ 
 });
 
 client.init();
-
-/*setInterval(function() {
-	for ( var i = 0; i < lights.length; i++ ) {
-		var rand = Math.random();
-		if ( rand < 0.333333 ) {
-			lights[i].color( 120, 100, 80 );
-		} else if ( rand < 0.66666667 ) {
-			lights[i].color( 0, 100, 80 );
-		} else {
-			lights[i].color( 240, 100, 80 );
-		}
-	}
-}, 2000);*/
 
 function allLightsWhite() {
 	for ( var i = 0; i < lights.length; i++ ) {
@@ -244,12 +224,3 @@ function changeACmode( mode ) {
 		roomState.ac.mode = mode;
 	}
 };
-
-// var light1 = client.light('Ceiling Fan Bulb 1');
-// console.log(light1);
-// var light2 = client.light('Ceiling Fan Bulb 2');
-// var light3 = client.light('Ceiling Fan Bulb 3');
-
-// light1.color(50, 50, 80);
-// light2.color(0, 50, 80);
-// light3.color(160, 50, 80);
