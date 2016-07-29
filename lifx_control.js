@@ -8,9 +8,9 @@ var device = awsIot.device({
   "port": 8883,
   "clientId": "my-room-activator",
   "thingName": "My_Room",
-  "caCert": "./aws_certs/root-CA.crt",
-  "clientCert": "./aws_certs/0a5ea7d8f3-certificate.pem.crt",
-  "privateKey": "./aws_certs/0a5ea7d8f3-private.pem.key"
+  "caCert": "aws_certs/root-CA.crt",
+  "clientCert": "aws_certs/0a5ea7d8f3-certificate.pem.crt",
+  "privateKey": "aws_certs/0a5ea7d8f3-private.pem.key"
 });
 
 // Keep track of the room's state as last seen by the pi.  This will help decide which buttons
@@ -21,8 +21,14 @@ var roomState = {
 	},
 	tv: {
 		on: false
+	},
+	ac: {
+		on: false,
+		mode: 'energy_saver'
 	}
 }
+
+var ac_modes = ['energy_saver', 'cool', 'fan', 'dry'];
 
 // Subscribe to the AWS IoT MQTT topic corresponding to the room
 //
@@ -52,8 +58,9 @@ device.on('message', function(topic, payload) {
 
 	payload = JSON.parse( payload ).state.desired;
 
+
+	// Deal with changes to the lights
 	if ( payload.lights ) {
-		// Deal with changes to the lights
 		var hue = payload.lights.hue ? parseInt( payload.lights.hue ) : 0;
 		var sat = payload.lights.sat ? parseInt( payload.lights.sat ) : 0;
 		var bri = payload.lights.bri ? parseInt( payload.lights.bri ) : 100;
@@ -72,7 +79,7 @@ device.on('message', function(topic, payload) {
 	}
 
 	// Deal with changes to the soundbar
-	if ( payload.soundbar && payload.soundbar.on ) {
+	if ( payload.soundbar ) {
 		// If the power of the soundbar isn't what we asked for, hit the soundbar's remote button
 		if ( payload.soundbar.on !== roomState.soundbar.on ) {
 			sendIRCommand( 'VIZIO_SOUNDBAR', 'KEY_POWER' );
@@ -81,13 +88,28 @@ device.on('message', function(topic, payload) {
 	}
 
 	// Deal with changes to the TV
-	if ( payload.tv && payload.tv.on ) {
+	if ( payload.tv ) {
 		// If the power of the TV isn't what we asked for, hit the TV's remote button
 		if ( payload.tv.on !== roomState.tv.on ) {
 			sendIRCommand( 'TV', 'KEY_POWER' );
 			roomState.tv.on = payload.tv.on;
 		}
 	}
+
+	// Deal with changes to the AC
+	if ( payload.ac ) {
+		// If the power of the AC isn't what we asked for, hit the AC's remote button
+		if ( payload.ac.on !== roomState.ac.on ) {
+			sendIRCommand( 'AIR_CONDITIONER', 'KEY_POWER' );
+			roomState.ac.on = payload.ac.on;
+		}
+
+		if ( payload.ac.mode ) {
+			changeACmode( payload.ac.mode );
+		}
+	}
+
+	console.log('New room state: ' + JSON.stringify( roomState, null, 2 ));
 })
 
 // Create a new client we can use in the future to talk to the lights
@@ -136,15 +158,92 @@ function allLightsWhite() {
 	}
 }
 
+var outstandingIRCommands = 0;
+
 function sendIRCommand( remote, key ) {
-	var cmd = exec('irsend SEND_ONCE ' + remote + ' ' + key, function(error, stdout, stderr) {
-		if ( error ) {
-			console.log( 'Error ' + error + ' sending command line command: ' + stderr );
-			return;
-		}
-		console.log( 'Successfully sent IR key press: ' + remote + ', ' + key );
-	});
+	// If we have one or more outstanding IR commands, wait until the other have finished before sending a new one
+	if ( outstandingIRCommands > 0 ) {
+		setTimeout(function() {
+			sendIRCommand( remote, key );
+		}, 10);
+	} else {
+		outstandingIRCommands ++ ;
+		var cmd = exec('irsend SEND_ONCE ' + remote + ' ' + key, function(error, stdout, stderr) {
+			if ( error ) {
+				console.log( 'Error ' + error + ' sending command line command: ' + stderr );
+				return;
+			}
+			console.log( 'Successfully sent IR key press: ' + remote + ', ' + key );
+			outstandingIRCommands -- ;
+		});
+	}
 }
+
+function changeACmode( mode ) {
+	var numModeChanges = 0;
+	if ( mode !== roomState.ac.mode ) {
+		switch( roomState.ac.mode ) {
+			case 'energy_saver':
+				switch( mode ) {
+					case 'cool':
+						numModeChanges = 1;
+						break;
+					case 'fan':
+						numModeChanges = 2;
+						break;
+					case 'dry':
+						numModeChanges = 3;
+						break;
+				}
+				break;
+			case 'cool':
+				switch( mode ) {
+					case 'fan':
+						numModeChanges = 1;
+						break;
+					case 'dry':
+						numModeChanges = 2;
+						break;
+					case 'energy_saver':
+						numModeChanges = 3;
+						break;
+				}
+				break;
+			case 'fan':
+				switch( mode ) {
+					case 'dry':
+						numModeChanges = 1;
+						break;
+					case 'energy_saver':
+						numModeChanges = 2;
+						break;
+					case 'cool':
+						numModeChanges = 3;
+						break;
+				}
+				break;
+			case 'dry':
+				switch( mode ) {
+					case 'energy_saver':
+						numModeChanges = 1;
+						break;
+					case 'cool':
+						numModeChanges = 2;
+						break;
+					case 'fan':
+						numModeChanges = 3;
+						break;
+				}
+				break;
+		}
+
+		for ( var i = 0; i < numModeChanges; i++ ) {
+			sendIRCommand( 'AIR_CONDITIONER', 'KEY_MODE');
+		}
+
+		roomState.ac.mode = mode;
+	}
+};
 
 // var light1 = client.light('Ceiling Fan Bulb 1');
 // console.log(light1);
