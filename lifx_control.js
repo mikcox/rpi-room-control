@@ -24,11 +24,13 @@ var roomState = {
 	},
 	ac: {
 		on: false,
-		mode: 'energy_saver'
+		mode: 'energy_saver',
+		timer: 0
 	}
 }
 
 var ac_modes = ['energy_saver', 'cool', 'fan', 'dry'];
+var ac_interval;
 
 // Subscribe to the AWS IoT MQTT topic corresponding to the room
 //
@@ -106,6 +108,12 @@ device.on('message', function(topic, payload) {
 
 		if ( payload.ac.mode ) {
 			changeACmode( payload.ac.mode );
+		}
+
+		if ( payload.ac.timer ) {
+			setACtimer( payload.ac.timer );
+		} else {
+			roomState.ac.timer = 0;
 		}
 	}
 
@@ -223,4 +231,34 @@ function changeACmode( mode ) {
 
 		roomState.ac.mode = mode;
 	}
+};
+
+function setACtimer( hours ) {
+	// Make sure the AC is off
+	if ( roomState.ac.on ) {
+		sendIRCommand( 'AIR_CONDITIONER', 'KEY_POWER' );
+	}
+	// If there's a timer set for a large number of hours, reset the AC
+	if ( roomState.ac.timer > hours ) {
+		sendIRCommand( 'AIR_CONDITIONER', 'KEY_POWER' );
+		sendIRCommand( 'AIR_CONDITIONER', 'KEY_POWER' );
+	} else if ( roomState.ac.timer > 0 ) {
+		// If there's already a number of hours set, just increase the number of hours
+		hours = hours - roomState.ac.timer;
+	}
+
+	for ( var i = 0; i < hours; i++ ) {
+		sendIRCommand( 'AIR_CONDITIONER', 'KEY_TIMER' );
+	}
+
+	roomState.ac.timer = hours;
+
+	// Create an interval to count down the hours as the AC counts down the hours
+	acInterval = setInterval(function() {
+		if ( roomState.ac.timer > 0 ) {
+			roomState.ac.timer--;
+		} else {
+			clearInterval( acInterval );
+		}
+	}, 3600000);
 };
