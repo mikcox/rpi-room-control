@@ -17,7 +17,8 @@ var device = awsIot.device({
 // need to be pressed to achieve the desired state that was published by Alexa.
 var roomState = {
 	soundbar: {
-		on: false
+		on: false,
+		volume: 8
 	},
 	tv: {
 		on: false
@@ -86,6 +87,10 @@ device.on('message', function(topic, payload) {
 		if ( payload.soundbar.on !== roomState.soundbar.on ) {
 			sendIRCommand( 'VIZIO_SOUNDBAR', 'KEY_POWER' );
 			roomState.soundbar.on = payload.soundbar.on;
+		}
+
+		if ( payload.soundbar.volume >= 0 ) {
+			changeSoundbarVolume( payload.soundbar.volume );
 		}
 	}
 
@@ -262,3 +267,21 @@ function setACtimer( hours ) {
 		}
 	}, 3600000);
 };
+
+function changeSoundbarVolume( volume ) {
+	// Soundbar's max volume is 35
+	if ( volume > 35 ) {
+		volume = 35;
+	}
+	if ( volume > roomState.soundbar.volume ) {
+		for ( var i = 0; i < (volume - roomState.soundbar.volume); i++ ) {
+			sendIRCommand( 'VIZIO_SOUNDBAR', 'KEY_VOLUMEUP');
+		}
+	} else if ( volume < roomState.soundbar.volume ) {
+		for ( var i = 0; i < (roomState.soundbar.volume - volume); i++ ) {
+			sendIRCommand( 'VIZIO_SOUNDBAR', 'KEY_VOLUMEDOWN');
+		}
+	}
+
+	roomState.soundbar.volume = volume;
+}
