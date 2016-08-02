@@ -264,6 +264,7 @@ function setACtimer( hours ) {
 			roomState.ac.timer--;
 		} else {
 			clearInterval( acInterval );
+			roomState.ac.on = true;
 		}
 	}, 3600000);
 };
